@@ -1,304 +1,73 @@
-name: Build Native Clients
+name: Build Windows Desktop
 
 on:
   push:
     branches: [main]
     paths:
-      - 'lx-clients/**'
-      - '.github/workflows/build-native-clients.yml'
+      - "lx-clients/**"
+      - ".github/workflows/build-native-clients.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'lx-clients/**'
-      - '.github/workflows/build-native-clients.yml'
+      - "lx-clients/**"
+      - ".github/workflows/build-native-clients.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 defaults:
   run:
     working-directory: lx-clients
 
 jobs:
-  build-android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    env:
-      LX_VERSION_CODE: ${{ github.run_number }}
-      LX_VERSION_NAME: "1.0.${{ github.run_number }}"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Decode release keystore
-        env:
-          LX_KEYSTORE_BASE64: ${{ secrets.LX_KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "$LX_KEYSTORE_BASE64" ]; then
-            echo "ERROR: LX_KEYSTORE_BASE64 secret is not configured."
-            echo "Please generate a keystore and add it to GitHub Secrets:"
-            echo "  keytool -genkeypair -v -keystore lx-release.jks -alias lx -keyalg RSA -keysize 4096 -validity 10000"
-            echo "  base64 -w 0 lx-release.jks"
-            exit 1
-          fi
-          echo "$LX_KEYSTORE_BASE64" | base64 -d > /tmp/lx.keystore
-          echo "Keystore decoded successfully"
-
-      - name: Build Release APK
-        env:
-          LX_KEYSTORE_PATH: /tmp/lx.keystore
-          LX_KEYSTORE_PASSWORD: ${{ secrets.LX_KEYSTORE_PASSWORD }}
-          LX_KEY_ALIAS: ${{ secrets.LX_KEY_ALIAS }}
-          LX_KEY_PASSWORD: ${{ secrets.LX_KEY_PASSWORD }}
-        run: ./gradlew :androidApp:assembleRelease
-
-      - name: Rename APK with version
-        run: |
-          mkdir -p release-assets
-          cp androidApp/build/outputs/apk/release/*.apk \
-            release-assets/lx-android-v1.0.${{ github.run_number }}.apk
-          echo "APK renamed:"
-          ls -la release-assets/
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: lx-android-release
-          path: lx-clients/release-assets/*.apk
-          retention-days: 30
-
-  build-desktop:
-    name: Build Desktop MSI
+  build-windows:
+    name: Build MSI and EXE
     runs-on: windows-latest
+    timeout-minutes: 45
     env:
       LX_VERSION_NAME: "1.0.${{ github.run_number }}"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-        shell: bash
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
-      - name: Build Desktop MSI
-        id: build-msi
-        run: ./gradlew :desktopApp:packageReleaseMsi
-        shell: bash
-        continue-on-error: true
+      - name: Compile desktop application
+        shell: powershell
+        run: .\gradlew.bat :desktopApp:compileKotlinDesktop --stacktrace
 
-      - name: Print jpackage logs on MSI failure
-        if: steps.build-msi.outcome == 'failure'
-        shell: bash
-        run: |
-          echo "=== jpackage error log ==="
-          cat desktopApp/build/compose/logs/packageReleaseMsi/*-err.txt 2>/dev/null || echo "No err.txt found"
-          echo ""
-          echo "=== jpackage output log ==="
-          cat desktopApp/build/compose/logs/packageReleaseMsi/*-out.txt 2>/dev/null || echo "No out.txt found"
-          echo ""
-          echo "=== jpackage args ==="
-          cat desktopApp/build/compose/tmp/packageReleaseMsi.args.txt 2>/dev/null || echo "No args.txt found"
-          echo ""
-          exit 1
+      - name: Build MSI
+        shell: powershell
+        run: .\gradlew.bat :desktopApp:packageReleaseMsi --stacktrace
+
+      - name: Build EXE
+        shell: powershell
+        run: .\gradlew.bat :desktopApp:packageReleaseExe --stacktrace
 
       - name: Upload MSI
-        if: steps.build-msi.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: lx-desktop-msi
+          name: lingxi-windows-msi
           path: lx-clients/desktopApp/build/compose/binaries/main*/msi/*.msi
           if-no-files-found: error
           retention-days: 30
 
-      - name: Build Desktop Exe (portable)
-        id: build-exe
-        run: ./gradlew :desktopApp:packageReleaseExe
-        shell: bash
-        continue-on-error: true
-
-      - name: Print jpackage logs on EXE failure
-        if: steps.build-exe.outcome == 'failure'
-        shell: bash
-        run: |
-          echo "=== jpackage error log ==="
-          cat desktopApp/build/compose/logs/packageReleaseExe/*-err.txt 2>/dev/null || echo "No err.txt found"
-          echo ""
-          echo "=== jpackage output log ==="
-          cat desktopApp/build/compose/logs/packageReleaseExe/*-out.txt 2>/dev/null || echo "No out.txt found"
-          echo ""
-          exit 1
-
-      - name: Upload Exe
-        if: steps.build-exe.outcome == 'success'
+      - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: lx-desktop-exe
+          name: lingxi-windows-exe
           path: lx-clients/desktopApp/build/compose/binaries/main*/exe/*.exe
           if-no-files-found: error
           retention-days: 30
-
-  build-desktop-macos-arm64:
-    name: Build Desktop DMG (Apple Silicon)
-    runs-on: macos-latest
-    env:
-      LX_VERSION_NAME: "1.0.${{ github.run_number }}"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build Desktop DMG (Apple Silicon)
-        run: ./gradlew :desktopApp:packageDmg
-
-      - name: Upload DMG (arm64)
-        uses: actions/upload-artifact@v4
-        with:
-          name: lx-desktop-dmg-arm64
-          path: lx-clients/desktopApp/build/compose/binaries/main*/dmg/*.dmg
-          if-no-files-found: error
-          retention-days: 30
-
-
-  release:
-    name: Publish to GitHub Releases
-    needs: [build-android, build-desktop, build-desktop-macos-arm64]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: false
-
-      - name: Prepare release assets
-        run: |
-          mkdir -p release-assets
-          VERSION="v1.0.${{ github.run_number }}"
-
-          # 文件名带版本号，每次构建可区分
-          copy_asset() {
-            local artifact_dir="$1"
-            local pattern="$2"
-            local output_name="$3"
-            local label="$4"
-
-            if [ ! -d "$artifact_dir" ]; then
-              echo "✗ $label: directory $artifact_dir not found"
-              return 0
-            fi
-
-            local found_file
-            found_file=$(find "$artifact_dir" -name "$pattern" -type f | head -1)
-            if [ -n "$found_file" ]; then
-              cp "$found_file" "release-assets/${VERSION}-${output_name}"
-              local size_mb
-              size_mb=$(du -m "release-assets/${VERSION}-${output_name}" | cut -f1)
-              echo "✓ $label: ${VERSION}-${output_name} (${size_mb} MB)"
-            else
-              echo "✗ $label: no $pattern found in $artifact_dir"
-            fi
-          }
-
-          copy_asset "artifacts/lx-android-release" "*.apk" "lx-android.apk" "Android APK"
-          copy_asset "artifacts/lx-desktop-msi" "*.msi" "lx-windows.msi" "Windows MSI"
-          copy_asset "artifacts/lx-desktop-exe" "*.exe" "lx-windows-portable.exe" "Windows EXE"
-          copy_asset "artifacts/lx-desktop-dmg-arm64" "*.dmg" "lx-macos-arm64.dmg" "macOS ARM64 DMG"
-
-          echo "=== Release assets ==="
-          ls -la release-assets/
-
-      - name: Publish to GitHub Release (versioned tag)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="v1.0.${{ github.run_number }}"
-
-          gh release create "${VERSION}" \
-            --title "LX修图 ${VERSION}" \
-            --notes "## LX修图 ${VERSION}
-
-          **Commit:** ${{ github.sha }}
-          **构建时间:** $(date -u '+%Y-%m-%d %H:%M UTC')
-          **版本号:** ${VERSION}
-
-          ### 下载说明
-          - **Android**: 下载 \`${VERSION}-lx-android.apk\`
-          - **Windows 安装版**: 下载 \`${VERSION}-lx-windows.msi\`
-          - **Windows 便携版**: 下载 \`${VERSION}-lx-windows-portable.exe\`
-          - **macOS Apple Silicon**: 下载 \`${VERSION}-lx-macos-arm64.dmg\`"
-
-          UPLOAD_FAILED=0
-          for file in release-assets/*; do
-            [ -f "$file" ] || continue
-            ok=0
-            for attempt in 1 2 3; do
-              echo "=== Uploading $(basename "$file") (attempt $attempt, $(du -m "$file" | cut -f1)MB) ==="
-              upload_output=$(gh release upload "${VERSION}" "$file" --clobber 2>&1) && ok=1
-              if [ "$ok" = "1" ]; then
-                echo "OK: $upload_output"
-                break
-              fi
-              echo "::error::Upload $(basename "$file") attempt $attempt failed: $upload_output"
-              sleep 10
-            done
-            if [ "$ok" != "1" ]; then
-              echo "::error::Failed to upload $(basename "$file") after 3 attempts"
-              UPLOAD_FAILED=1
-            fi
-          done
-          [ "$UPLOAD_FAILED" = "0" ] || exit 1
-
-      - name: Cleanup old releases (keep latest 20)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release list --limit 50 --json tagName,createdAt --jq '.[] | "\(.createdAt) \(.tagName)"' \
-            | sort -r \
-            | tail -n +21 \
-            | while read -r line; do
-                TAG=$(echo "$line" | awk '{print $2}')
-                if [ -n "$TAG" ] && [ "$TAG" != "latest" ]; then
-                  echo "Deleting old release: $TAG"
-                  gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-                fi
-              done
