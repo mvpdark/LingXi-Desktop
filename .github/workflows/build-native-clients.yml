@@ -98,27 +98,45 @@ jobs:
 
       - name: List downloaded files
         shell: bash
-        run: find artifacts -type f -exec ls -lh {} \;
+        run: |
+          echo "=== All files in artifacts ==="
+          find artifacts -type f -exec ls -lh {} \;
+          echo "=== MSI files ==="
+          ls -la artifacts/msi/
+          echo "=== EXE files ==="
+          ls -la artifacts/exe/
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: LingXi Desktop v1.0.${{ github.run_number }}
-          body: |
-            ## LingXi Desktop v1.0.${{ github.run_number }}
+      - name: Create release with gh CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION="v1.0.${{ github.run_number }}"
+          echo "Creating release $VERSION..."
+          
+          # Find the actual files
+          MSI_FILE=$(find artifacts/msi -name "*.msi" | head -1)
+          EXE_FILE=$(find artifacts/exe -name "*.exe" | head -1)
+          
+          echo "MSI file: $MSI_FILE"
+          echo "EXE file: $EXE_FILE"
+          
+          if [ -z "$MSI_FILE" ] || [ -z "$EXE_FILE" ]; then
+            echo "ERROR: Could not find installer files!"
+            exit 1
+          fi
+          
+          gh release create "$VERSION" \
+            --title "LingXi Desktop $VERSION" \
+            --notes "Windows desktop application with integrated FFmpeg and AI models.
 
-            Windows desktop application with integrated FFmpeg and AI models.
+          ### Downloads
+          - MSI installer — recommended for system-wide installation
+          - EXE installer — portable installer
 
-            ### Downloads
-            - **MSI installer** — recommended for system-wide installation
-            - **EXE installer** — portable installer
-
-            ### System Requirements
-            - Windows 10/11 (64-bit)
-            - Java 17+ (bundled in installer)
-          files: |
-            artifacts/msi/*.msi
-            artifacts/exe/*.exe
-          draft: false
-          prerelease: false
+          ### System Requirements
+          - Windows 10/11 (64-bit)
+          - Java 17+ (bundled in installer)" \
+            "$MSI_FILE" "$EXE_FILE"
+          
+          echo "Release created successfully!"
