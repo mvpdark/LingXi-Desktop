@@ -97,7 +97,7 @@ internal object WindowsFilePicker {
         0xDC1C5A9C.toInt(),
         0xE88A.toShort(),
         0x4DDE.toShort(),
-        byteArrayOf(0xA5, 0xA1, 0x60, 0xF8, 0x2A, 0x20, 0xAE, 0xF7),
+        byteArrayOf(0xA5.toByte(), 0xA1.toByte(), 0x60.toByte(), 0xF8.toByte(), 0x2A.toByte(), 0x20.toByte(), 0xAE.toByte(), 0xF7.toByte()),
     )
 
     // --- IID_IFileOpenDialog = {D57C7288-D4AD-4768-BE02-9D969532D960} ---
@@ -105,7 +105,7 @@ internal object WindowsFilePicker {
         0xD57C7288.toInt(),
         0xD4AD.toShort(),
         0x4768.toShort(),
-        byteArrayOf(0xBE, 0x02, 0x9D, 0x96, 0x95, 0x32, 0xD9, 0x60),
+        byteArrayOf(0xBE.toByte(), 0x02.toByte(), 0x9D.toByte(), 0x96.toByte(), 0x95.toByte(), 0x32.toByte(), 0xD9.toByte(), 0x60.toByte()),
     )
 
     /**
