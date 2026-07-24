@@ -8,50 +8,81 @@ import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.mvpdark.lx.core.util.PlatformLogger
+import java.awt.FileDialog
+import java.awt.Frame
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
+/**
+ * Desktop 图片选择器。
+ *
+ * 平台策略：
+ * - Windows：优先使用 [WindowsFilePicker]（COM IFileOpenDialog，Win11 Fluent Design 原生对话框），
+ *   失败时回退到 AWT [FileDialog]
+ * - macOS / Linux：使用 AWT [FileDialog]（调用各自系统的原生文件对话框）
+ *
+ * 所有文件选择操作在 [Dispatchers.IO] 中执行，避免阻塞 Compose UI 线程。
+ */
 @Composable
 actual fun rememberImagePickerLauncher(onResult: (ByteArray?) -> Unit): () -> Unit {
     val scope = rememberCoroutineScope()
-    // 缓存 JFileChooser 实例，避免每次打开都重新创建（包含文件系统扫描开销）
-    val fileChooser = remember {
-        JFileChooser().apply {
-            fileFilter = FileNameExtensionFilter(
-                "Images (jpg, png, webp, gif, bmp)",
-                "jpg", "jpeg", "png", "webp", "gif", "bmp",
-            )
-            isMultiSelectionEnabled = false
-        }
-    }
-    // rememberUpdatedState 持有最新 onResult：remember(Unit) 缓存的启动 lambda
-    // 不会因重组捕获到过期的回调引用
     val currentOnResult by rememberUpdatedState(onResult)
+
     return remember(Unit) {
         {
-            // TODO: 传入 Compose 窗口的 AWT Window 作为 parent，避免对话框可能出现在屏幕角落
-            val result = fileChooser.showOpenDialog(null)
-            if (result == JFileChooser.APPROVE_OPTION) {
-                val selectedFile = fileChooser.selectedFile
-                // 将 IO 密集的读取操作切到 Dispatchers.IO，避免阻塞 UI 线程
-                scope.launch {
-                    val bytes = withContext(Dispatchers.IO) {
-                        runCatching {
-                            selectedFile?.readBytes()
-                        }.onFailure { e ->
-                            top.mvpdark.lx.core.util.PlatformLogger.e(
-                                "ImagePicker",
-                                "Failed to read image file: ${selectedFile?.absolutePath}",
-                                e,
-                            )
-                        }.getOrNull()
-                    }
-                    currentOnResult(bytes)
+            scope.launch {
+                val bytes = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val path = pickFilePath()
+                        path?.let { File(it).readBytes() }
+                    }.onFailure { e ->
+                        PlatformLogger.e("ImagePicker", "Failed to pick image file", e)
+                    }.getOrNull()
                 }
-            } else {
-                currentOnResult(null)
+                currentOnResult(bytes)
             }
         }
     }
+}
+
+/**
+ * 选择图片文件路径。
+ *
+ * Windows 平台优先尝试 COM IFileOpenDialog（Win11 Fluent Design），
+ * 失败或取消时回退到 AWT FileDialog。
+ */
+private fun pickFilePath(): String? {
+    if (isWindows()) {
+        // COM IFileOpenDialog — Win11 原生 Fluent Design 文件选择器
+        val nativePath = WindowsFilePicker.pickImageFile()
+        if (nativePath != null) return nativePath
+        // 原生选择器失败或用户取消 → 回退到 FileDialog
+        // （用户取消时 nativePath 为 null，FileDialog 也会让用户取消）
+    }
+    return pickWithFileDialog()
+}
+
+/**
+ * AWT FileDialog 回退方案（macOS / Linux 原生对话框）。
+ */
+private fun pickWithFileDialog(): String? {
+    val dialog = FileDialog(null as Frame?, "选择图片", FileDialog.LOAD).apply {
+        file = "*.jpg;*.jpeg;*.png;*.webp;*.gif;*.bmp"
+        setFilenameFilter { _, name ->
+            val ext = name.substringAfterLast('.', "").lowercase()
+            ext in setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
+        }
+        isVisible = true
+    }
+    val dir = dialog.directory
+    val file = dialog.file
+    return if (dir != null && file != null) {
+        File(dir, file).absolutePath
+    } else {
+        null
+    }
+}
+
+private fun isWindows(): Boolean {
+    return System.getProperty("os.name", "").lowercase().contains("win")
 }

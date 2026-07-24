@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import top.mvpdark.lx.data.model.DetectedObject
@@ -93,6 +94,14 @@ import top.mvpdark.lx.data.model.CollaborativeStage
 import top.mvpdark.lx.ui.imageedit.ImageEditUiState
 import top.mvpdark.lx.ui.imageedit.ImageEditViewModel
 import top.mvpdark.lx.ui.imageedit.rememberImagePickerLauncher
+import top.mvpdark.lx.ui.components.imageDropZone
+import top.mvpdark.lx.ui.theme.Champagne
+import top.mvpdark.lx.ui.theme.ChampagneBright
+import top.mvpdark.lx.ui.theme.ObsidianSurface
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.aspectRatio
 
 // 对齐 image-edit.js 的 Konva 颜色常量
 private val AnnotationRed = Color(0xFFFA5151)
@@ -165,6 +174,7 @@ fun ImageEditScreen(
                 ImageEditViewModel.Step.Upload -> UploadContent(
                     error = state.error,
                     onPickImage = launchPicker,
+                    onImageDropped = { bytes -> viewModel.onPickImage(bytes) },
                 )
 
                 ImageEditViewModel.Step.Analyzing -> LoadingContent(
@@ -216,61 +226,106 @@ fun ImageEditScreen(
 // ============================================================
 
 /**
- * 上传步骤：显示选择图片按钮 + 提示文案。
+ * 上传步骤：大型拖拽区域 + 点击选择 + 暗色主题。
+ *
+ * 设计语言：
+ * - 曜石黑背景 + 香槟金边框，匹配 Noir Aurum 主题
+ * - 拖拽时边框高亮 + 背景微金 + 文案切换为"松开即可上传"
+ * - 点击任意位置触发原生文件选择器
+ * - 支持拖拽文件直接上传（Desktop 平台）
  */
 @Composable
 private fun UploadContent(
     error: String?,
     onPickImage: () -> Unit,
+    onImageDropped: (ByteArray) -> Unit,
 ) {
+    var isDragging by remember { mutableStateOf(false) }
+
+    val borderColor by animateColorAsState(
+        targetValue = if (isDragging) ChampagneBright else Champagne.copy(alpha = 0.25f),
+        animationSpec = tween(200),
+        label = "borderColor",
+    )
+    val bgColor by animateColorAsState(
+        targetValue = if (isDragging) Champagne.copy(alpha = 0.06f) else ObsidianSurface.copy(alpha = 0.3f),
+        animationSpec = tween(200),
+        label = "bgColor",
+    )
+    val iconColor by animateColorAsState(
+        targetValue = if (isDragging) ChampagneBright else Champagne.copy(alpha = 0.5f),
+        animationSpec = tween(200),
+        label = "iconColor",
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Box(
             modifier = Modifier
-                .size(96.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(24.dp),
-                ),
+                .fillMaxWidth()
+                .weight(1f)
+                .imageDropZone(
+                    onDraggingChange = { isDragging = it },
+                    onImageDropped = onImageDropped,
+                )
+                .clip(RoundedCornerShape(20.dp))
+                .background(bgColor)
+                .border(
+                    width = 2.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(20.dp),
+                )
+                .clickable { onPickImage() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.AddAPhoto,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // 大型图标
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(
+                            color = iconColor.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(24.dp),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddAPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = iconColor,
+                    )
+                }
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    text = if (isDragging) "松开即可上传" else "拖拽图片到此处",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDragging) ChampagneBright else MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "或点击选择文件",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "JPG · PNG · WEBP · GIF · BMP",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Champagne.copy(alpha = 0.35f),
+                    letterSpacing = 1.sp,
+                )
+            }
         }
-        Spacer(Modifier.height(20.dp))
-        Text(
-            text = "点击上传图片",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "支持 JPG、PNG",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = onPickImage,
-            shape = RoundedCornerShape(24.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.AddAPhoto,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("选择图片")
-        }
+
         if (error != null) {
             Spacer(Modifier.height(16.dp))
             Text(

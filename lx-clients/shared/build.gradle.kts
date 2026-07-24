@@ -83,6 +83,9 @@ kotlin {
                 implementation(libs.ktor.client.java)
                 implementation(libs.coroutines.swing)
                 implementation(compose.desktop.currentOs)
+                // JNA — 调用 Windows COM IFileOpenDialog 实现 Win11 原生文件选择器
+                implementation(libs.jna.core)
+                implementation(libs.jna.platform)
             }
         }
 
