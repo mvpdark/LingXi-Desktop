@@ -65,7 +65,9 @@ internal object WindowsFilePicker {
     private const val FOS_FILEMUSTEXIST = 0x00001000
 
     // --- SIGDN (Shell Item Get Display Name) ---
-    private const val SIGDN_FILESYSPATH = -2147450880 // 0x80058000.toInt()
+    // 0x80058000 = 2147844096 (unsigned) → signed int32 = -2147123200
+    // 修正：之前错误地使用了 -2147450880 (0x80008000)，导致 GetDisplayName 失败
+    private const val SIGDN_FILESYSPATH = -2147123200 // 0x80058000
 
     // --- IFileOpenDialog vtable 索引 ---
     // IUnknown: 0=QueryInterface, 1=AddRef, 2=Release
@@ -111,11 +113,16 @@ internal object WindowsFilePicker {
     /**
      * 显示 Windows 11 原生文件选择对话框。
      *
+     * 必须在 AWT EDT（Event Dispatch Thread）上调用，因为 COM IFileOpenDialog::Show
+     * 需要消息泵（Message Pump）来处理对话框的 UI 事件。EDT 是 STA 线程，自带消息泵。
+     *
      * @return 选中文件的完整路径，用户取消或出错时返回 null
      */
     fun pickImageFile(): String? {
+        PlatformLogger.d("WindowsFilePicker", "pickImageFile() start")
         return try {
             val initHr = ole32.CoInitializeEx(null, COINIT_APARTMENTTHREADED)
+            PlatformLogger.d("WindowsFilePicker", "CoInitializeEx hr=0x${initHr.toString(16)}")
             if (initHr != S_OK && initHr != S_FALSE) {
                 PlatformLogger.e("WindowsFilePicker", "CoInitializeEx failed: 0x${initHr.toString(16)}")
                 return null
@@ -125,6 +132,7 @@ internal object WindowsFilePicker {
             } finally {
                 if (initHr == S_OK) {
                     ole32.CoUninitialize()
+                    PlatformLogger.d("WindowsFilePicker", "CoUninitialize done")
                 }
             }
         } catch (e: Throwable) {
@@ -143,6 +151,7 @@ internal object WindowsFilePicker {
             IID_IFILE_OPEN_DIALOG,
             ppv,
         )
+        PlatformLogger.d("WindowsFilePicker", "CoCreateInstance hr=0x${hr.toString(16)}")
         if (hr != S_OK) {
             PlatformLogger.e("WindowsFilePicker", "CoCreateInstance failed: 0x${hr.toString(16)}")
             return null
@@ -156,7 +165,8 @@ internal object WindowsFilePicker {
             val optsRef = IntByReference()
             invokeCom(vtable, VT_GET_OPTIONS, pDialog, optsRef)
             val newOpts = optsRef.value or FOS_FORCEFILESYSTEM or FOS_FILEMUSTEXIST
-            invokeCom(vtable, VT_SET_OPTIONS, pDialog, newOpts)
+            val setOptsHr = invokeCom(vtable, VT_SET_OPTIONS, pDialog, newOpts)
+            PlatformLogger.d("WindowsFilePicker", "SetOptions hr=0x${setOptsHr.toString(16)}, opts=0x${newOpts.toString(16)}")
 
             // SetFileTypes — 图片过滤器
             val filterMem = allocFilterSpecs(
@@ -165,7 +175,8 @@ internal object WindowsFilePicker {
                     "所有文件" to "*.*",
                 ),
             )
-            invokeCom(vtable, VT_SET_FILE_TYPES, pDialog, 2, filterMem)
+            val setFtHr = invokeCom(vtable, VT_SET_FILE_TYPES, pDialog, 2, filterMem)
+            PlatformLogger.d("WindowsFilePicker", "SetFileTypes hr=0x${setFtHr.toString(16)}")
 
             // SetFileTypeIndex — 默认选中第一个过滤器（1-based）
             invokeCom(vtable, VT_SET_FILE_TYPE_INDEX, pDialog, 1)
@@ -174,9 +185,14 @@ internal object WindowsFilePicker {
             val titleMem = allocWideString("选择图片")
             invokeCom(vtable, VT_SET_TITLE, pDialog, titleMem)
 
-            // Show(HWND_OWNER = null)
+            // Show(HWND_OWNER = null) — 在 EDT 上调用，有消息泵
+            PlatformLogger.d("WindowsFilePicker", "Show() — opening native dialog...")
             val showHr = invokeCom(vtable, VT_SHOW, pDialog, null as Pointer?)
-            if (showHr == ERROR_CANCELLED) return null // 用户取消
+            PlatformLogger.d("WindowsFilePicker", "Show hr=0x${showHr.toString(16)}")
+            if (showHr == ERROR_CANCELLED) {
+                PlatformLogger.d("WindowsFilePicker", "User cancelled")
+                return null // 用户取消
+            }
             if (showHr != S_OK) {
                 PlatformLogger.e("WindowsFilePicker", "Show failed: 0x${showHr.toString(16)}")
                 return null
@@ -185,6 +201,7 @@ internal object WindowsFilePicker {
             // GetResult → IShellItem
             val pShellItemRef = PointerByReference()
             val resultHr = invokeCom(vtable, VT_GET_RESULT, pDialog, pShellItemRef)
+            PlatformLogger.d("WindowsFilePicker", "GetResult hr=0x${resultHr.toString(16)}")
             if (resultHr != S_OK) {
                 PlatformLogger.e("WindowsFilePicker", "GetResult failed: 0x${resultHr.toString(16)}")
                 return null
@@ -196,12 +213,18 @@ internal object WindowsFilePicker {
             try {
                 // GetDisplayName(SIGDN_FILESYSPATH) → LPWSTR*
                 val nameRef = PointerByReference()
-                invokeCom(siVtable, VT_SI_GET_DISPLAY_NAME, pShellItem, SIGDN_FILESYSPATH, nameRef)
+                val nameHr = invokeCom(siVtable, VT_SI_GET_DISPLAY_NAME, pShellItem, SIGDN_FILESYSPATH, nameRef)
+                PlatformLogger.d("WindowsFilePicker", "GetDisplayName hr=0x${nameHr.toString(16)}, SIGDN=0x${(SIGDN_FILESYSPATH + 0x100000000).toString(16)}")
 
-                val pathPtr = nameRef.value ?: return null
+                val pathPtr = nameRef.value
+                if (pathPtr == null) {
+                    PlatformLogger.e("WindowsFilePicker", "GetDisplayName returned null path")
+                    return null
+                }
                 val path = pathPtr.getWideString(0)
                 ole32.CoTaskMemFree(pathPtr)
 
+                PlatformLogger.d("WindowsFilePicker", "Selected path: $path")
                 return path
             } finally {
                 invokeCom(siVtable, VT_SI_RELEASE, pShellItem)
@@ -222,6 +245,7 @@ internal object WindowsFilePicker {
      */
     private fun invokeCom(vtable: Pointer, index: Int, thisPtr: Pointer, vararg args: Any?): Int {
         val funcPtr = vtable.getPointer(index.toLong() * Native.POINTER_SIZE)
+            ?: error("vtable[$index] returned null function pointer")
         val func = Function.getFunction(funcPtr)
         val allArgs = arrayOf<Any?>(thisPtr, *args)
         return func.invokeInt(allArgs)

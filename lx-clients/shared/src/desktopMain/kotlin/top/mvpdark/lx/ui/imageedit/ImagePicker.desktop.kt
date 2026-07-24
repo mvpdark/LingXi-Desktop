@@ -7,6 +7,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
 import top.mvpdark.lx.core.util.PlatformLogger
 import java.awt.FileDialog
@@ -21,7 +22,11 @@ import java.io.File
  *   失败时回退到 AWT [FileDialog]
  * - macOS / Linux：使用 AWT [FileDialog]（调用各自系统的原生文件对话框）
  *
- * 所有文件选择操作在 [Dispatchers.IO] 中执行，避免阻塞 Compose UI 线程。
+ * 线程策略：
+ * - 文件选择对话框在 [Dispatchers.Swing]（AWT EDT）上执行，因为：
+ *   1. COM IFileOpenDialog::Show 需要 STA 线程 + 消息泵（EDT 满足两者）
+ *   2. AWT FileDialog 也要求在 EDT 上创建和显示
+ * - 文件字节读取在 [Dispatchers.IO] 上执行，避免阻塞 EDT
  */
 @Composable
 actual fun rememberImagePickerLauncher(onResult: (ByteArray?) -> Unit): () -> Unit {
@@ -31,13 +36,23 @@ actual fun rememberImagePickerLauncher(onResult: (ByteArray?) -> Unit): () -> Un
     return remember(Unit) {
         {
             scope.launch {
-                val bytes = withContext(Dispatchers.IO) {
-                    runCatching {
-                        val path = pickFilePath()
-                        path?.let { File(it).readBytes() }
-                    }.onFailure { e ->
-                        PlatformLogger.e("ImagePicker", "Failed to pick image file", e)
-                    }.getOrNull()
+                // 1. 在 EDT 上显示文件选择对话框（COM 和 AWT 都要求 EDT）
+                val path = withContext(Dispatchers.Swing) {
+                    runCatching { pickFilePath() }
+                        .onFailure { e ->
+                            PlatformLogger.e("ImagePicker", "Failed to pick image file", e)
+                        }
+                        .getOrNull()
+                }
+                // 2. 在 IO 线程上读取文件字节（不阻塞 EDT）
+                val bytes = path?.let { p ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { File(p).readBytes() }
+                            .onFailure { e ->
+                                PlatformLogger.e("ImagePicker", "Failed to read file: $p", e)
+                            }
+                            .getOrNull()
+                    }
                 }
                 currentOnResult(bytes)
             }
@@ -50,12 +65,19 @@ actual fun rememberImagePickerLauncher(onResult: (ByteArray?) -> Unit): () -> Un
  *
  * Windows 平台优先尝试 COM IFileOpenDialog（Win11 Fluent Design），
  * 失败或取消时回退到 AWT FileDialog。
+ *
+ * 必须在 AWT EDT 上调用。
  */
 private fun pickFilePath(): String? {
     if (isWindows()) {
+        PlatformLogger.d("ImagePicker", "Trying WindowsFilePicker (COM IFileOpenDialog)")
         // COM IFileOpenDialog — Win11 原生 Fluent Design 文件选择器
         val nativePath = WindowsFilePicker.pickImageFile()
-        if (nativePath != null) return nativePath
+        if (nativePath != null) {
+            PlatformLogger.d("ImagePicker", "WindowsFilePicker returned: $nativePath")
+            return nativePath
+        }
+        PlatformLogger.d("ImagePicker", "WindowsFilePicker returned null, falling back to FileDialog")
         // 原生选择器失败或用户取消 → 回退到 FileDialog
         // （用户取消时 nativePath 为 null，FileDialog 也会让用户取消）
     }
@@ -64,6 +86,8 @@ private fun pickFilePath(): String? {
 
 /**
  * AWT FileDialog 回退方案（macOS / Linux 原生对话框）。
+ *
+ * 必须在 AWT EDT 上调用。
  */
 private fun pickWithFileDialog(): String? {
     val dialog = FileDialog(null as Frame?, "选择图片", FileDialog.LOAD).apply {
