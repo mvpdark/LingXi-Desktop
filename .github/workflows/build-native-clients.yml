@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
@@ -71,3 +71,45 @@ jobs:
           path: lx-clients/desktopApp/build/compose/binaries/main*/exe/*.exe
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download MSI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lingxi-windows-msi
+          path: artifacts
+
+      - name: Download EXE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lingxi-windows-exe
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: LingXi Desktop v1.0.${{ github.run_number }}
+          body: |
+            ## LingXi Desktop v1.0.${{ github.run_number }}
+
+            Windows desktop application with integrated FFmpeg and AI models.
+
+            ### Downloads
+            - **MSI installer** — recommended for system-wide installation
+            - **EXE installer** — portable installer
+
+            ### System Requirements
+            - Windows 10/11 (64-bit)
+            - Java 17+ (bundled in installer)
+          files: artifacts/*
+          draft: false
+          prerelease: false
