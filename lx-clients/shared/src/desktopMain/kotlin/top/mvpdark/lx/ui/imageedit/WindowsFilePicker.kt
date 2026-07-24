@@ -220,10 +220,10 @@ internal object WindowsFilePicker {
      * 64 位 Windows 上只有一种调用约定（Microsoft x64），
      * 因此 Function.getFunction 默认约定即可正确调用 COM 方法。
      */
-    private fun invokeCom(vtable: Pointer, index: Int, thisPtr: Pointer, vararg args: Any): Int {
+    private fun invokeCom(vtable: Pointer, index: Int, thisPtr: Pointer, vararg args: Any?): Int {
         val funcPtr = vtable.getPointer(index.toLong() * Native.POINTER_SIZE)
         val func = Function.getFunction(funcPtr)
-        val allArgs = arrayOf(thisPtr, *args)
+        val allArgs = arrayOf<Any?>(thisPtr, *args)
         return func.invokeInt(allArgs)
     }
 
