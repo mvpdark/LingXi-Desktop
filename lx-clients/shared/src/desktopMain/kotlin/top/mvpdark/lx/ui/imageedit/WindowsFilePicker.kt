@@ -65,7 +65,7 @@ internal object WindowsFilePicker {
     private const val FOS_FILEMUSTEXIST = 0x00001000
 
     // --- SIGDN (Shell Item Get Display Name) ---
-    private const val SIGDN_FILESYSPATH = 0x80058000
+    private const val SIGDN_FILESYSPATH = -2147450880 // 0x80058000.toInt()
 
     // --- IFileOpenDialog vtable 索引 ---
     // IUnknown: 0=QueryInterface, 1=AddRef, 2=Release
@@ -94,7 +94,7 @@ internal object WindowsFilePicker {
 
     // --- CLSID_FileOpenDialog = {DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7} ---
     private val CLSID_FILE_OPEN_DIALOG = createGuid(
-        0xDC1C5A9C,
+        0xDC1C5A9C.toInt(),
         0xE88A.toShort(),
         0x4DDE.toShort(),
         byteArrayOf(0xA5, 0xA1, 0x60, 0xF8, 0x2A, 0x20, 0xAE, 0xF7),
@@ -102,7 +102,7 @@ internal object WindowsFilePicker {
 
     // --- IID_IFileOpenDialog = {D57C7288-D4AD-4768-BE02-9D969532D960} ---
     private val IID_IFILE_OPEN_DIALOG = createGuid(
-        0xD57C7288,
+        0xD57C7288.toInt(),
         0xD4AD.toShort(),
         0x4768.toShort(),
         byteArrayOf(0xBE, 0x02, 0x9D, 0x96, 0x95, 0x32, 0xD9, 0x60),

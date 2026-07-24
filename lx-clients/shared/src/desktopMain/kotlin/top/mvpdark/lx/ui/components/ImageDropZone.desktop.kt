@@ -78,9 +78,7 @@ actual fun Modifier.imageDropZone(
 
     return this.dragAndDropTarget(
         shouldStartDragAndDrop = { event ->
-            event.mimeTypes().any { mimeType ->
-                mimeType == "application/x-java-file-list" || mimeType == "text/uri-list"
-            }
+            event.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
         },
         target = target,
     )
