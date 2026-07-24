@@ -27,7 +27,7 @@ local.properties
 *.key
 
 # Runtime data, uploads, and cache
-data/
+/data/
 *.db
 *.db-shm
 *.db-wal
@@ -64,9 +64,9 @@ hs_err_pid*.log
 *.exe
 
 # Design working files
-assets/
-design/
+/assets/
+/design/
 
 # AI models are packaged separately by CI
-models/
+/models/
 *.onnx
