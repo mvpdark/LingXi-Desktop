@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.savedstate.read
 import org.koin.compose.viewmodel.koinViewModel
 import top.mvpdark.lx.ui.auth.AuthViewModel
 import top.mvpdark.lx.ui.components.LoadingIndicator
@@ -82,7 +83,9 @@ fun NavGraph() {
                 navArgument(Routes.SESSION_ID_ARG) { type = NavType.StringType },
             ),
         ) { backStackEntry ->
-            val sessionId: String = backStackEntry.arguments?.get<String>(Routes.SESSION_ID_ARG) ?: ""
+            val sessionId = backStackEntry.arguments?.read {
+                getString(Routes.SESSION_ID_ARG)
+            }.orEmpty()
             ChatScreen(sessionId = sessionId)
         }
 
