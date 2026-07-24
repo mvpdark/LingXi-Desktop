@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LingXi — Professional Photo Atelier</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<section id="auth" class="auth">
+  <div class="auth-bg">
+    <div class="auth-glow"></div>
+    <div class="auth-grain"></div>
+  </div>
+  <div class="auth-card">
+    <h1 class="brand-mark" data-text="LingXi">LingXi</h1>
+    <p class="brand-sub" data-i18n="brand_sub">PROFESSIONAL PHOTO ATELIER</p>
+    <div class="auth-form">
+      <div class="input-wrap">
+        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <input id="au-user" type="text" data-i18n-placeholder="username_placeholder" placeholder="Username" autocomplete="username" spellcheck="false">
+      </div>
+      <div class="input-wrap">
+        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.2"/></svg>
+        <input id="au-pass" type="password" data-i18n-placeholder="password_placeholder" placeholder="Password" autocomplete="current-password">
+      </div>
+    </div>
+    <button id="au-go" class="btn-go" data-i18n="enter_darkroom">Enter Darkroom</button>
+    <button id="au-toggle" class="btn-link" data-i18n="create_account">Create Account</button>
+    <p id="au-err" class="auth-err"></p>
+  </div>
+</section>
+
+<!-- ═══════════════════ APP ═══════════════════ -->
+<section id="app" class="app hidden">
+
+  <!-- ─── Title Bar ─── -->
+  <header class="titlebar" id="titlebar">
+    <div class="tb-left">
+      <span class="tb-logo">LingXi</span>
+      <nav class="tb-nav">
+        <button class="tb-nav-btn active" data-view="dashboard" data-i18n="nav_dashboard">Dashboard</button>
+        <button class="tb-nav-btn" data-view="editor" data-i18n="nav_editor">Editor</button>
+        <button class="tb-nav-btn" data-view="gallery" data-i18n="nav_gallery">Gallery</button>
+      </nav>
+    </div>
+    <div class="tb-right">
+      <span class="tb-balance" id="balance-chip"></span>
+
+      <!-- 🌐 Language Switcher -->
+      <div class="lang-switcher" id="lang-switcher">
+        <button class="lang-btn" id="lang-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="3" ry="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 8h12" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span id="lang-label">EN</span>
+        </button>
+        <div class="lang-drop" id="lang-drop">
+          <button class="lang-opt" data-lang="zh-CN"><span class="lang-opt-flag">🇨🇳</span> 中文</button>
+          <button class="lang-opt" data-lang="en"><span class="lang-opt-flag">🇬🇧</span> English</button>
+          <button class="lang-opt" data-lang="ja"><span class="lang-opt-flag">🇯🇵</span> 日本語</button>
+          <button class="lang-opt" data-lang="ko"><span class="lang-opt-flag">🇰🇷</span> 한국어</button>
+        </div>
+      </div>
+
+      <div class="tb-user" id="tb-user">
+        <div class="tb-avatar" id="avatar-sm"></div>
+        <span id="uname-sm"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ Dashboard ═══ -->
+  <div class="view active" id="view-dashboard">
+    <div class="dash-hero">
+      <div class="dash-welcome">
+        <h2 class="dash-greeting" data-i18n="welcome_back">Welcome back</h2>
+        <p class="dash-sub" data-i18n="welcome_sub">Your darkroom is ready. What would you like to create today?</p>
+      </div>
+      <div class="dash-quick">
+        <button class="dash-upload-btn" id="btn-hero-upload">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 14V4M10 4L6 8M10 4l4 4M4 16v3h12v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-i18n="import_photo">Import Photo</span>
+        </button>
+      </div>
+    </div>
+    <div class="cards-grid">
+      <!-- 主功能大卡 -->
+      <div class="feature-card feature-card-primary" data-action="enhance">
+        <div class="fc-icon fc-icon-lg"><svg width="32" height="32" viewBox="0 0 28 28" fill="none"><path d="M14 4l2.5 7.5L24 14l-7.5 2.5L14 24l-2.5-7.5L4 14l7.5-2.5L14 4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></div>
+        <div class="fc-body"><h3 class="fc-title fc-title-lg" data-i18n="card_enhance_title">AI Enhance</h3><p class="fc-desc" data-i18n="card_enhance_desc">One-click clarity boost.</p></div>
+        <div class="fc-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 5l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <!-- 辅助卡 -->
+      <div class="feature-card" data-action="rembg">
+        <div class="fc-icon"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><rect x="4" y="4" width="20" height="20" rx="4" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3"/><path d="M9 14l3.5 3.5L19 10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="fc-body"><h3 class="fc-title" data-i18n="card_rembg_title">Background Removal</h3><p class="fc-desc" data-i18n="card_rembg_desc">U2Net precision cutout.</p></div>
+      </div>
+      <div class="feature-card" data-action="presets">
+        <div class="fc-icon"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><rect x="3" y="3" width="9" height="9" rx="1.8" stroke="currentColor" stroke-width="1.3"/><rect x="16" y="3" width="9" height="9" rx="1.8" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="16" width="9" height="9" rx="1.8" stroke="currentColor" stroke-width="1.3"/><rect x="16" y="16" width="9" height="9" rx="1.8" stroke="currentColor" stroke-width="1.3"/></svg></div>
+        <div class="fc-body"><h3 class="fc-title" data-i18n="card_presets_title">Preset Filters</h3><p class="fc-desc" data-i18n="card_presets_desc">24 pro color grades.</p></div>
+      </div>
+      <div class="feature-card" data-action="batch">
+        <div class="fc-icon"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><rect x="4" y="3" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="4" y="12" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="4" y="21" width="13" height="4" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg></div>
+        <div class="fc-body"><h3 class="fc-title" data-i18n="card_batch_title">Batch Processing</h3><p class="fc-desc" data-i18n="card_batch_desc">Edit multiple photos at once.</p></div>
+      </div>
+    </div>
+    <div class="section-head">
+      <h3 data-i18n="recent_projects">Recent Projects</h3>
+      <button class="section-link" data-i18n="section_view_all">View all</button>
+    </div>
+    <div class="recent-strip" id="recent-strip">
+      <div class="recent-empty" data-i18n="recent_empty">Drop photos to start your first project</div>
+    </div>
+  </div>
+
+  <!-- ═══ Editor ═══ -->
+  <div class="view" id="view-editor">
+    <div class="editor-layout">
+      <aside class="editor-tools-left" id="tools-left">
+        <button class="et-btn active" data-tool="pointer" data-i18n-title="tool_pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 2l-3 12 3-1 2 4 2-1-2-4 3 1L5 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></button>
+        <button class="et-btn" data-tool="crop" data-i18n-title="tool_crop"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="5" width="10" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M3 2v3M15 2v3M3 16v-3M15 16v-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+        <button class="et-btn" data-tool="brush" data-i18n-title="tool_brush"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M9.5 9.5L15 15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+        <div class="et-sep"></div>
+        <button class="et-btn" data-act="rembg" data-i18n-title="tool_rembg"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="3" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/><path d="M6 9l2.5 2.5L12 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="et-btn" data-act="enhance" data-i18n-title="tool_enhance"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2l1.6 4.6L15 8l-4.4 1.4L9 14l-1.6-4.6L3 8l4.4-1.4L9 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></button>
+      </aside>
+      <div class="editor-canvas" id="canvas">
+        <div class="editor-canvas-bg"></div>
+        <div class="stage-empty" id="canvas-empty">
+          <div class="empty-orb"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 20V8M14 8l-5 5M14 8l5 5M2 24v3h24v-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <p class="empty-text" data-i18n="drop_photo">Drop photo to begin</p>
+        </div>
+        <img id="canvas-img" class="stage-img hidden" alt="">
+      </div>
+      <aside class="editor-panel-right" id="panel-right">
+        <div class="ep-section"><h4 class="ep-title" data-i18n="adjustments">Adjustments</h4>
+          <div class="ep-sliders">
+            <div class="ep-slider-row"><label data-i18n="slider_exposure">Exposure</label><input type="range" min="-100" max="100" value="0" class="ep-range"></div>
+            <div class="ep-slider-row"><label data-i18n="slider_contrast">Contrast</label><input type="range" min="-100" max="100" value="0" class="ep-range"></div>
+            <div class="ep-slider-row"><label data-i18n="slider_highlights">Highlights</label><input type="range" min="-100" max="100" value="0" class="ep-range"></div>
+            <div class="ep-slider-row"><label data-i18n="slider_shadows">Shadows</label><input type="range" min="-100" max="100" value="0" class="ep-range"></div>
+            <div class="ep-slider-row"><label data-i18n="slider_saturation">Saturation</label><input type="range" min="-100" max="100" value="0" class="ep-range"></div>
+          </div>
+        </div>
+        <div class="ep-section"><h4 class="ep-title" data-i18n="presets_title">Presets</h4><div class="ep-presets" id="presets-grid"></div></div>
+        <div class="ep-section">
+          <button class="ep-export-btn" id="btn-export"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v8M8 3L5 6M8 3l3 3M2 12v2h12v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="export_image">Export Image</span></button>
+        </div>
+      </aside>
+    </div>
+    <div class="filmstrip" id="filmstrip">
+      <button class="fs-add" id="btn-upload"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <div class="fs-track" id="fs-track"></div>
+    </div>
+    <div class="dock">
+      <div class="dock-bar">
+        <input id="dock-input" class="dock-input" data-i18n-placeholder="dock_placeholder" placeholder="Describe your edits…" autocomplete="off">
+        <button class="dock-send" id="btn-send" disabled><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l10-4-4 10-1.3-3.7L2 7z" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+    <input type="file" id="file-pick" accept="image/*" multiple hidden>
+    <input type="file" id="batch-pick" accept="image/*" multiple hidden>
+  </div>
+
+  <!-- ═══ Gallery ═══ -->
+  <div class="view" id="view-gallery">
+    <div class="gallery-header">
+      <h2 data-i18n="gallery_title">Gallery</h2>
+      <div class="gallery-filters">
+        <button class="gf-btn active" data-i18n="gallery_all">All</button>
+        <button class="gf-btn" data-i18n="gallery_enhanced">Enhanced</button>
+        <button class="gf-btn" data-i18n="gallery_nobg">No Background</button>
+        <button class="gf-btn" data-i18n="gallery_exported">Exported</button>
+      </div>
+    </div>
+    <div class="gallery-grid" id="gallery-grid">
+      <div class="gallery-empty" data-i18n="gallery_empty">No photos yet. Start editing to build your gallery.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Image Viewer ═══ -->
+<div id="viewer" class="viewer hidden">
+  <div class="viewer-bg" id="viewer-bg"></div>
+  <img id="viewer-img" class="viewer-img" alt="">
+  <button class="viewer-close" id="viewer-close"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+</div>
+
+<!-- ═══ Loading ═══ -->
+<div id="loading" class="loading hidden">
+  <div class="loading-card">
+    <div class="loading-ring"></div>
+    <p id="loading-text" data-i18n="processing">Processing</p>
+  </div>
+</div>
+
+<!-- ═══ Toast ═══ -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

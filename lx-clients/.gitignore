@@ -1,0 +1,35 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Kotlin
+*.kotlin_metadata
+
+# Gradle
+build/
+.gradle/
+gradle/build/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+androidApp/build/
+shared/build/
+
+# Desktop
+desktopApp/build/
+desktopApp/compose-icons/
+
+# IDE
+.idea/
+*.swp
+*~

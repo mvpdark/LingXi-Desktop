@@ -1,0 +1,57 @@
+# ===========================================================================
+# 灵犀后端编排（Compose v2）：app（FastAPI 纯 API） + postgres（16）
+#
+# 供参考与 VPS 部署使用；Unraid 用户请优先使用 unraid/ 目录下的 CA 模板。
+#
+# 用法（在项目根目录）：
+#   cp backend/.env.example .env   # 然后编辑 .env 填入真实密钥
+#   docker compose up -d --build   # 构建并后台启动
+#   docker compose logs -f app     # 查看日志（首次启动会看到建表输出）
+#   docker compose down            # 停止并移除容器（pgdata volume 数据保留）
+#
+# compose 会自动读取同目录 .env 用于下方 ${} 插值，同时 .env 也通过
+# env_file 原样注入 app 容器（environment 中同名项优先级更高）。
+# ===========================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lx-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lingxi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-lingxi}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: ghcr.io/mvpdark/lx-api:latest
+    container_name: lx-backend
+    ports:
+      - "8765:8765"
+    env_file: .env
+    environment:
+      # 指向上面的 postgres 服务（compose 同网络内按服务名解析）
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lingxi}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-lingxi}
+      # 纯 API 模式：不托管前端静态文件
+      SERVE_FRONTEND: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # 【可选】持久化上传/生成图片与 WebDAV 本地缓存（取消注释并配合
+    #  .env 中 ASSETS_DIR=/app/assets_cache 使用）：
+    # volumes:
+    #   - assets-cache:/app/assets_cache
+
+volumes:
+  pgdata:
+  # assets-cache:

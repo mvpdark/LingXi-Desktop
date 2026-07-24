@@ -1,0 +1,72 @@
+# Old repository metadata backup
+.git-old-*/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+config.yaml
+local.properties
+*.local
+
+# Credentials and signing
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Runtime data, uploads, and cache
+data/
+*.db
+*.db-shm
+*.db-wal
+.uploads/
+uploads/
+cache/
+logs/
+
+# Build artifacts
+build/
+dist/
+out/
+lx-clients/.gradle/
+lx-clients/.kotlin/
+lx-clients/build/
+lx-clients/*/build/
+lx-clients/*/*/build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Debug and generated packages
+hs_err_pid*.log
+*.apk
+*.aab
+*.msi
+*.exe
+
+# Design working files
+assets/
+design/
+
+# AI models are packaged separately by CI
+models/
+*.onnx

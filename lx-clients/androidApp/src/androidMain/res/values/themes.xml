@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      灵犀基础主题。
+      采用框架 Material 主题（NoActionBar），不依赖 Material Components 库；
+      实际 UI 由 Compose 的 MaterialTheme 渲染，此主题仅负责窗口底色与状态栏样式。
+    -->
+    <style name="Theme.Lx" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 暖奶油色窗口背景 -->
+        <item name="android:windowBackground">#F8F6F3</item>
+        <!-- 边到边：状态栏 / 导航栏透明（实际样式由 enableEdgeToEdge 控制） -->
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

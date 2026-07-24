@@ -1,0 +1,53 @@
+# ===========================================================================
+# Docker 构建上下文排除规则（路径相对于【项目根目录】= 构建上下文根）
+#
+# 供项目根目录的 Dockerfile 使用（经典构建器与 BuildKit 均读取本文件）。
+# 根 Dockerfile 采用 COPY src/ /app/src/ 整体复制，以下规则保证：
+#   1. 敏感配置（config.yaml / .env，含真实密钥）绝不进入构建上下文；
+#   2. SAM2 权重（约 300MB）、sam2_src 仓库杂物不进入镜像；
+#   3. 前端工程 / 截图 / 文档等与后端运行时无关的内容不进上下文。
+# 注意：backend/（requirements.txt）与 docker/（entrypoint.sh）必须保留在上下文中。
+# ===========================================================================
+
+# -- 版本控制 / IDE ----------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.trae/
+.vscode/
+.idea/
+
+# -- Python 缓存 -------------------------------------------------------------
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+
+# -- 敏感配置（含 API Key / 密码，严禁进入上下文；运行时以环境变量注入） ---------
+config.yaml
+.env
+.env.*
+
+# -- 运行期数据（通过 volume 挂载提供，不打入镜像） -----------------------------
+cache/
+assets/
+.uploads/
+
+# -- SAM2 模型权重（约 300MB；运行时 volume 挂载到 /app/src/checkpoints） -------
+src/checkpoints/*.pt
+
+# -- sam2_src：仅保留 sam2/ 包本体（含其 configs/*.yaml 模型配置） -------------
+src/sam2_src/*
+!src/sam2_src/sam2/
+
+# -- 部署模板 / 文档 / 截图 / 脚本等根目录杂物 -----------------------------------
+unraid/
+screenshots/
+docs/
+scripts/
+canvas-fonts/
+/*.png
+/*.md
+/pyproject.toml
+/requirements.txt
+/docker-compose.yml

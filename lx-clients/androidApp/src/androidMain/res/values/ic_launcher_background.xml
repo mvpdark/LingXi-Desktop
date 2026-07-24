@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  灵犀启动图标自适应背景色（鼠尾草绿）。
+-->
+<resources>
+    <color name="ic_launcher_background">#7A9B7A</color>
+</resources>

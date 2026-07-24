@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>lx-postgres</Name>
+  <Repository>postgres:16-alpine</Repository>
+  <Registry>https://hub.docker.com/_/postgres</Registry>
+  <Network>host</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project/>
+  <Overview>灵犀后端专用 PostgreSQL 16 数据库（alpine 精简版）。首次启动按下方三个变量初始化用户/密码/库，数据持久化到 /mnt/user/appdata/lx-postgres。部署说明：本容器使用 host 网络模式，直接占用宿主机 5432 端口；lx-backend 容器（同样 host 网络）通过 127.0.0.1:5432 访问本库。【安全警告】host 网络模式下 5432 端口直接暴露在宿主机网络，务必配置防火墙限制 5432 端口仅本机（127.0.0.1）访问，防止数据库被外部直接连接。</Overview>
+  <Category>Other:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/docker-library/docs/master/postgres/logo.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="数据目录" Target="/var/lib/postgresql/data" Default="/mnt/user/appdata/lx-postgres" Mode="rw" Description="PostgreSQL 数据持久化目录（含全部业务表数据，勿删除）" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/lx-postgres</Config>
+  <Config Name="POSTGRES_USER" Target="POSTGRES_USER" Default="lingxi" Mode="" Description="数据库用户名（需与后端 DATABASE_URL 中的用户名一致）" Type="Variable" Display="always" Required="true" Mask="false">lingxi</Config>
+  <Config Name="POSTGRES_PASSWORD" Target="POSTGRES_PASSWORD" Default="CHANGE_ME" Mode="" Description="数据库密码（需与后端 DATABASE_URL 中的密码一致，务必修改）" Type="Variable" Display="always" Required="true" Mask="true">CHANGE_ME</Config>
+  <Config Name="POSTGRES_DB" Target="POSTGRES_DB" Default="lingxi" Mode="" Description="初始数据库名（需与后端 DATABASE_URL 末尾的库名一致）" Type="Variable" Display="always" Required="true" Mask="false">lingxi</Config>
+</Container>

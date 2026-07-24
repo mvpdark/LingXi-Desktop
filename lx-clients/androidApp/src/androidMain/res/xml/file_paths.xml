@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- APK 下载到 cacheDir，供 FileProvider 共享给系统安装器 -->
+    <cache-path name="cache" path="." />
+</paths>

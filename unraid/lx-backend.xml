@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>lx-backend</Name>
+  <Repository>ghcr.io/mvpdark/lx-api:latest</Repository>
+  <Registry>https://github.com/mvpdark/linxi/pkgs/container/lx-api</Registry>
+  <Network>host</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project/>
+  <Overview>灵犀多租户 SaaS 后端（FastAPI 纯 API，端口 8765，JWT 认证 + PostgreSQL + WebDAV 文件存储 + 独立计费）。部署说明：1) 本容器使用 host 网络模式，直接占用宿主机端口（API 8765）；2) 依赖 lx-postgres 数据库容器，需把 lx-postgres 的 5432 端口也映射到宿主机（host 网络或端口映射均可），DATABASE_URL 里填 127.0.0.1:5432；3) 首次启动自动建表（日志可见表清单）；4) 健康检查：http://服务器IP:8765/api/health 返回 {"ok": true} 即正常；5) 密钥类变量务必全部改为真实值（不要沿用 CHANGE_ME）。【安全警告】host 网络模式下 5432 端口直接暴露在宿主机网络，务必配置防火墙限制 5432 端口仅本机（127.0.0.1）访问，否则数据库将面临未授权访问风险。</Overview>
+  <Category>Other:</Category>
+  <WebUI>http://[IP]:[PORT:8765]/api/health</WebUI>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="API 端口" Target="8765" Default="8765" Mode="tcp" Description="后端 API 服务端口（host 网络模式下直接占用宿主机端口）" Type="Port" Display="always" Required="true" Mask="false">8765</Config>
+  <Config Name="缓存目录" Target="/app/assets_cache" Default="/mnt/user/appdata/lx/cache" Mode="rw" Description="上传/生成图片与 WebDAV 本地缓存持久化目录（配合 ASSETS_DIR 变量）" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/lx/cache</Config>
+  <Config Name="DATABASE_URL" Target="DATABASE_URL" Default="postgresql+asyncpg://lingxi:CHANGE_ME@127.0.0.1:5432/lingxi" Mode="" Description="数据库连接串：postgresql+asyncpg://用户名:密码@127.0.0.1:5432/库名（host 网络模式下用 127.0.0.1；用户名/密码/库名须与 lx-postgres 容器一致。请将 CHANGE_ME 替换为实际数据库密码）" Type="Variable" Display="always" Required="true" Mask="false">postgresql+asyncpg://lingxi:CHANGE_ME@127.0.0.1:5432/lingxi</Config>
+  <Config Name="JWT_SECRET" Target="JWT_SECRET" Default="CHANGE_ME_GENERATE_WITH_python_secrets_token_urlsafe" Mode="" Description="JWT 签名密钥（生产必填）。生成：python -c &quot;import secrets; print(secrets.token_urlsafe(48))&quot;" Type="Variable" Display="always" Required="true" Mask="false">CHANGE_ME_GENERATE_WITH_python_secrets_token_urlsafe</Config>
+  <Config Name="WEBDAV_URL" Target="WEBDAV_URL" Default="http://192.168.10.8:19798/dav" Mode="" Description="WebDAV 用户文件存储地址" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.10.8:19798/dav</Config>
+  <Config Name="WEBDAV_USERNAME" Target="WEBDAV_USERNAME" Default="lingxi" Mode="" Description="WebDAV 用户名" Type="Variable" Display="always" Required="true" Mask="false">lingxi</Config>
+  <Config Name="WEBDAV_PASSWORD" Target="WEBDAV_PASSWORD" Default="CHANGE_ME" Mode="" Description="WebDAV 密码（请替换为实际密码）" Type="Variable" Display="always" Required="true" Mask="false">CHANGE_ME</Config>
+  <Config Name="ADMIN_USERNAME" Target="ADMIN_USERNAME" Default="admin" Mode="" Description="管理员用户名（首个注册用户自动成为 admin）" Type="Variable" Display="always" Required="true" Mask="false">admin</Config>
+  <Config Name="BILLING_RATE" Target="BILLING_RATE" Default="2.0" Mode="" Description="计费汇率（1 美元 = 多少人民币）" Type="Variable" Display="always" Required="true" Mask="false">2.0</Config>
+  <Config Name="SERVE_FRONTEND" Target="SERVE_FRONTEND" Default="false" Mode="" Description="是否托管前端静态文件（纯 API 部署固定 false）" Type="Variable" Display="always" Required="true" Mask="false">false</Config>
+  <Config Name="CORS_ORIGINS" Target="CORS_ORIGINS" Default="tauri://localhost,http://tauri.localhost" Mode="" Description="CORS 允许源（逗号分隔；Tauri v2 桌面端示例）" Type="Variable" Display="advanced" Required="false" Mask="false">tauri://localhost,http://tauri.localhost</Config>
+  <Config Name="LLM_API_BASE" Target="LLM_API_BASE" Default="https://yunwu.ai" Mode="" Description="yunwu API 地址（LLM 与图像共用）" Type="Variable" Display="advanced" Required="false" Mask="false">https://yunwu.ai</Config>
+  <Config Name="yunwu Key 1" Target="LLM_API_KEY_1" Default="CHANGE_ME" Mode="" Description="yunwu API Key #1（LLM + 图像共用，每个 key 独立变量。请替换为实际 API Key）" Type="Variable" Display="always" Required="true" Mask="false">CHANGE_ME</Config>
+  <Config Name="yunwu Key 2" Target="LLM_API_KEY_2" Default="" Mode="" Description="yunwu API Key #2（留空则只用 Key 1）" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="LLM_MODEL" Target="LLM_MODEL" Default="gpt-5.6-luna" Mode="" Description="LLM 主模型" Type="Variable" Display="advanced" Required="false" Mask="false">gpt-5.6-luna</Config>
+  <Config Name="IMAGE_MODEL" Target="IMAGE_MODEL" Default="gpt-image-2" Mode="" Description="图像生成模型（与 LLM 共用 yunwu key）" Type="Variable" Display="advanced" Required="false" Mask="false">gpt-image-2</Config>
+  <Config Name="Tavily Key 1" Target="TAVILY_API_KEY_1" Default="CHANGE_ME" Mode="" Description="Tavily 搜索 API Key #1（请替换为实际 Key）" Type="Variable" Display="always" Required="true" Mask="false">CHANGE_ME</Config>
+  <Config Name="Tavily Key 2" Target="TAVILY_API_KEY_2" Default="" Mode="" Description="Tavily 搜索 API Key #2（留空则只用 Key 1）" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Tavily Key 3" Target="TAVILY_API_KEY_3" Default="" Mode="" Description="Tavily 搜索 API Key #3（留空则只用 Key 1/2）" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="ASSETS_DIR" Target="ASSETS_DIR" Default="/app/assets_cache" Mode="" Description="容器内资源目录（与上方缓存目录挂载点保持一致）" Type="Variable" Display="advanced" Required="false" Mask="false">/app/assets_cache</Config>
+  <Config Name="API_TOKEN" Target="API_TOKEN" Default="" Mode="" Description="旧版服务间 API Token（可选，留空则用代码内默认值）" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>
