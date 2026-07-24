@@ -79,19 +79,26 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: .
 
     steps:
       - name: Download MSI artifact
         uses: actions/download-artifact@v4
         with:
           name: lingxi-windows-msi
-          path: artifacts
+          path: artifacts/msi
 
       - name: Download EXE artifact
         uses: actions/download-artifact@v4
         with:
           name: lingxi-windows-exe
-          path: artifacts
+          path: artifacts/exe
+
+      - name: List downloaded files
+        shell: bash
+        run: find artifacts -type f -exec ls -lh {} \;
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -110,6 +117,8 @@ jobs:
             ### System Requirements
             - Windows 10/11 (64-bit)
             - Java 17+ (bundled in installer)
-          files: artifacts/*
+          files: |
+            artifacts/msi/*.msi
+            artifacts/exe/*.exe
           draft: false
           prerelease: false
