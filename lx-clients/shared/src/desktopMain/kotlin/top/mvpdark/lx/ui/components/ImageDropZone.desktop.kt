@@ -5,6 +5,7 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
@@ -26,7 +27,7 @@ private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "b
  * 2. onStarted/onEnded 通知 UI 更新拖拽高亮状态
  * 3. onDrop 从 Transferable 提取 File，校验扩展名后读取字节流
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun Modifier.imageDropZone(
     onDraggingChange: (Boolean) -> Unit,
